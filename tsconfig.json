@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "strict": false,
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noUncheckedSideEffectImports": false,
+    "jsx": "react-jsx",
+    "paths": {
+      "#browser/*": [
+        "./source/browser/*"
+      ]
+    }
+  },
+  "exclude": [
+    "./target/"
+  ]
+}

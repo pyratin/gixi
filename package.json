@@ -1,0 +1,49 @@
+{
+  "name": "gixi",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "imports": {
+    "#browser/*": "./source/browser/*"
+  },
+  "scripts": {
+    "eslint": "npx eslint",
+    "tsc": "npx tsc",
+    "stylelint": "npx stylelint .",
+    "lint": "npm run eslint && npm run tsc && npm run stylelint",
+    "development:browser": "npx webpack-cli serve --mode development"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.29.2",
+    "@babel/preset-react": "^7.28.5",
+    "@eslint/js": "^9.39.4",
+    "@types/react-dom": "^19.2.3",
+    "babel-loader": "^10.1.1",
+    "copy-webpack-plugin": "^14.0.0",
+    "css-loader": "^7.1.4",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsdoc": "^62.9.0",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.5.0",
+    "html-webpack-plugin": "^5.6.7",
+    "mini-css-extract-plugin": "^2.10.2",
+    "prettier-plugin-jsdoc": "^1.8.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router": "^7.14.2",
+    "sass": "^1.99.0",
+    "sass-loader": "^16.0.7",
+    "stylelint": "^17.9.1",
+    "stylelint-config-standard-scss": "^17.0.0",
+    "typescript-eslint": "^8.59.1",
+    "webpack": "^5.106.2",
+    "webpack-cli": "^7.0.2",
+    "webpack-dev-server": "^5.2.3"
+  }
+}
