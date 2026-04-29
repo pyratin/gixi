@@ -71,5 +71,10 @@ export default {
         vendor: { test: exclude[0], name: 'vendor', enforce: true }
       }
     }
+  },
+  resolve: {
+    alias: {
+      'react-reconciler/constants': 'react-reconciler/constants.js'
+    }
   }
 };
