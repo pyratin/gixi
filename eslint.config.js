@@ -24,7 +24,12 @@ export default defineConfig([
     rules: {
       'no-console': 'error',
       'react/react-in-jsx-scope': 'off',
-      'react/prop-types': 'off'
+      'react/prop-types': 'off',
+      'react/no-unknown-property': 'off',
+      '@typescript-eslint/no-unused-expressions': [
+        'error',
+        { allowShortCircuit: true }
+      ]
     }
   }
 ]);
