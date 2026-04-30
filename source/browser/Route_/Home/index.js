@@ -3,7 +3,7 @@ import { useExtend } from '@pixi/react';
 import '@pixi/layout';
 import { LayoutContainer } from '@pixi/layout/components';
 import * as pixiJs from 'pixi.js';
-import { Assets, AnimatedSprite, Graphics, Circle } from 'pixi.js';
+import { Assets, Sprite, Graphics, Circle } from 'pixi.js';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import gsapPixiPlugin from 'gsap/PixiPlugin';
@@ -15,18 +15,48 @@ gsap.registerPlugin(useGSAP, gsapPixiPlugin);
 
 gsapPixiPlugin.registerPIXI(pixiJs);
 
-const textureCollection = await Assets.load('/asset/sprite/fighter.json').then(
-  ({ textures }) => Object.values(textures)
+const assetAliasCollection = ['flowerTop', 'eggHead'];
+
+Assets.add(
+  assetAliasCollection.map((alias) => ({
+    alias,
+    src: `/asset/sprite/${alias}.png`
+  }))
 );
 
-const LayoutContainer_ = () => {
-  useExtend({ LayoutContainer, AnimatedSprite, Graphics });
+Assets.backgroundLoad(assetAliasCollection);
+
+const LayoutContainer_ = ({
+  assetAliasIndexActive,
+  assetAliasIndexActiveSet
+}) => {
+  useExtend({ LayoutContainer, Sprite, Graphics });
+
+  const { contextSafe } = useGSAP();
 
   const ref = useRef(undefined);
 
-  const [_activeFlag, _activeFlagSet] = useState(false);
+  const [texture, textureSet] = useState(undefined);
 
-  const [activeFlag, activeFlagSet] = useState(false);
+  const [_activeFlag, _activeFlagSet] = useState(undefined);
+
+  const [activeFlag, activeFlagSet] = useState(undefined);
+
+  const animation = contextSafe((refCurrent = {}) => {
+    gsap.to(refCurrent, {
+      keyframes: [
+        { pixi: { scale: 0.9, angle: -5 } },
+        { pixi: { scale: 1.1, angle: 5 } },
+        { pixi: { scale: 1, angle: 0 } }
+      ],
+      duration: 0.25,
+      ease: 'bounce'
+    });
+  });
+
+  useEffect(() => {
+    Assets.load(assetAliasCollection[assetAliasIndexActive]).then(textureSet);
+  }, [assetAliasIndexActive]);
 
   useEffect(() => {
     const refCurrent = /** @type {LayoutContainer} */ (ref.current);
@@ -65,31 +95,28 @@ const LayoutContainer_ = () => {
     () => {
       const refCurrent = /** @type {LayoutContainer} */ (ref.current);
 
-      _activeFlag &&
-        gsap.to(refCurrent, {
-          keyframes: [
-            { pixi: { x: '-=1', y: '-=1', scale: '-=.1', angle: '-=5' } },
-            { pixi: { x: '+=2', y: '+=2', scale: '+=.2', angle: '+=10' } },
-            { pixi: { x: '-=1', y: '-=1', scale: '-=.1', angle: '-=5' } }
-          ],
-          duration: 0.5,
-          ease: 'bounce'
-        });
+      typeof _activeFlag === 'boolean' && animation(refCurrent);
     },
-    { dependencies: [_activeFlag], revertOnUpdate: true }
+    { dependencies: [_activeFlag] }
   );
 
   useGSAP(
     () => {
       const refCurrent = /** @type {LayoutContainer} */ (ref.current);
 
-      gsap.to(refCurrent, {
-        pixi: { y: activeFlag ? '-=200' : 0 },
-        duration: 0.5,
-        ease: 'bounce'
-      });
+      typeof activeFlag === 'boolean' &&
+        (() => {
+          animation(refCurrent);
+
+          gsap.to(refCurrent, {
+            pixi: activeFlag ? { y: -200 } : { y: 0 },
+            delay: 0.25,
+            duration: 1,
+            ease: 'elastic.out'
+          });
+        })();
     },
-    { dependencies: [activeFlag], revertOnUpdate: true }
+    { dependencies: [activeFlag] }
   );
 
   return (
@@ -99,14 +126,18 @@ const LayoutContainer_ = () => {
         position: 'relative',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 10
+        padding: 20
       }}
       eventMode='static'
       cursor='pointer'
       onPointerEnter={() => _activeFlagSet(true)}
       onPointerLeave={() => _activeFlagSet(false)}
       onPointerTap={() => {
-        activeFlagSet((activeFlag) => !activeFlag);
+        assetAliasIndexActiveSet((assetAliasIndexActive = 0) =>
+          !assetAliasIndexActive ? 1 : 0
+        );
+
+        activeFlagSet((activeFlag = false) => !activeFlag);
 
         _activeFlagSet(false);
       }}
@@ -127,20 +158,21 @@ const LayoutContainer_ = () => {
         <pixiGraphics draw={() => {}} layout={{ position: 'absolute' }} />
       </pixiLayoutContainer>
 
-      <pixiAnimatedSprite
-        label='animatedSprite'
-        textures={textureCollection}
-        layout={{}}
-      />
+      <pixiSprite texture={texture} layout={{}} />
     </pixiLayoutContainer>
   );
 };
 
 const Home = () => {
+  const [assetAliasIndexActive, assetAliasIndexActiveSet] = useState(0);
+
   return (
     <div className={['Home', style.Home].join(' ')}>
       <Application_ backgroundColor={0x1099bb}>
-        <LayoutContainer_ />
+        <LayoutContainer_
+          assetAliasIndexActive={assetAliasIndexActive}
+          assetAliasIndexActiveSet={assetAliasIndexActiveSet}
+        />
       </Application_>
     </div>
   );
