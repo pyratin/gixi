@@ -15,20 +15,29 @@ gsap.registerPlugin(useGSAP, gsapPixiPlugin);
 
 gsapPixiPlugin.registerPIXI(pixiJs);
 
-const assetAliasCollection = ['flowerTop', 'eggHead'];
+/** @type {[string, string[]][]} */
+const bundleDefinitionCollection = [
+  ['start-screen', ['flowerTop']],
+  ['game-screen', ['eggHead']]
+];
 
-Assets.add(
-  assetAliasCollection.map((alias) => ({
-    alias,
-    src: `/asset/sprite/${alias}.png`
-  }))
-);
+Assets.init({
+  manifest: {
+    bundles: bundleDefinitionCollection.map(([name, assetAliasCollection]) => ({
+      name,
+      assets: assetAliasCollection.map((alias) => ({
+        alias,
+        src: `/asset/sprite/${alias}.png`
+      }))
+    }))
+  }
+});
 
-Assets.backgroundLoad(assetAliasCollection);
+Assets.backgroundLoadBundle(bundleDefinitionCollection.map(([name]) => name));
 
 const LayoutContainer_ = ({
-  assetAliasIndexActive,
-  assetAliasIndexActiveSet
+  bundleDefinitionIndexActive = 0,
+  bundleDefinitionIndexActiveSet
 }) => {
   useExtend({ LayoutContainer, Sprite, Graphics });
 
@@ -38,25 +47,39 @@ const LayoutContainer_ = ({
 
   const [texture, textureSet] = useState(undefined);
 
-  const [_activeFlag, _activeFlagSet] = useState(undefined);
-
-  const [activeFlag, activeFlagSet] = useState(undefined);
-
-  const animation = contextSafe((refCurrent = {}) => {
-    gsap.to(refCurrent, {
+  const animation = contextSafe((event = {}) => {
+    gsap.to(event.target, {
       keyframes: [
-        { pixi: { scale: 0.9, angle: -5 } },
-        { pixi: { scale: 1.1, angle: 5 } },
-        { pixi: { scale: 1, angle: 0 } }
+        { pixi: { x: 2, scale: 1.05, angle: 2 } },
+        { pixi: { x: -2, scale: 0.95, angle: -2 } },
+        { pixi: { x: 0, scale: 1, angle: 0 } }
       ],
       duration: 0.25,
-      ease: 'bounce'
+      ease: 'bounce',
+      overwrite: 'auto'
     });
   });
 
+  const _animation = contextSafe(
+    (event = {}, bundleDefinitionIndexActive = false) => {
+      gsap.to(event.target, {
+        keyframes: [{ pixi: { y: bundleDefinitionIndexActive ? -200 : 0 } }],
+        delay: 0.25,
+        duration: 0.5,
+        ease: 'bounce',
+        overwrite: 'auto'
+      });
+    }
+  );
+
   useEffect(() => {
-    Assets.load(assetAliasCollection[assetAliasIndexActive]).then(textureSet);
-  }, [assetAliasIndexActive]);
+    const [name, [alias]] =
+      bundleDefinitionCollection[bundleDefinitionIndexActive];
+
+    Assets.loadBundle(name).then((bundleObject) =>
+      textureSet(bundleObject[alias])
+    );
+  }, [bundleDefinitionIndexActive]);
 
   useEffect(() => {
     const refCurrent = /** @type {LayoutContainer} */ (ref.current);
@@ -70,18 +93,20 @@ const LayoutContainer_ = ({
         layout: { _computedLayout: { width = 0, height = 0 } = {} } = {}
       } = refCurrent;
 
+      const radius = Math.max(width, height) / 2;
+
       Object.assign(
         refCurrent,
         /** @type {pixiJs.ContainerOptions} */ ({
-          hitArea: new Circle(width / 2, height / 2, height / 2)
+          hitArea: new Circle(width / 2, height / 2, radius)
         })
       );
 
       refCurrentGraphics
         .clear()
-        .circle(0, 0, height / 2)
+        .circle(0, 0, radius)
         .fill({ color: 0xffffff, alpha: 0.25 })
-        .stroke({ alignment: 1, width: 5, color: 0x000000, alpha: 0.25 });
+        .stroke({ alignment: 1, width: 8, color: 0x000000, alpha: 0.25 });
     };
 
     refCurrent.on('layout', onRefCurrentLayoutHandle);
@@ -91,34 +116,6 @@ const LayoutContainer_ = ({
     };
   }, []);
 
-  useGSAP(
-    () => {
-      const refCurrent = /** @type {LayoutContainer} */ (ref.current);
-
-      typeof _activeFlag === 'boolean' && animation(refCurrent);
-    },
-    { dependencies: [_activeFlag] }
-  );
-
-  useGSAP(
-    () => {
-      const refCurrent = /** @type {LayoutContainer} */ (ref.current);
-
-      typeof activeFlag === 'boolean' &&
-        (() => {
-          animation(refCurrent);
-
-          gsap.to(refCurrent, {
-            pixi: activeFlag ? { y: -200 } : { y: 0 },
-            delay: 0.25,
-            duration: 1,
-            ease: 'elastic.out'
-          });
-        })();
-    },
-    { dependencies: [activeFlag] }
-  );
-
   return (
     <pixiLayoutContainer
       ref={ref}
@@ -126,20 +123,21 @@ const LayoutContainer_ = ({
         position: 'relative',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 20
+        padding: 20 * (!bundleDefinitionIndexActive ? 1 : 1.6)
       }}
       eventMode='static'
       cursor='pointer'
-      onPointerEnter={() => _activeFlagSet(true)}
-      onPointerLeave={() => _activeFlagSet(false)}
-      onPointerTap={() => {
-        assetAliasIndexActiveSet((assetAliasIndexActive = 0) =>
-          !assetAliasIndexActive ? 1 : 0
-        );
+      onPointerEnter={animation}
+      onPointerTap={(event = {}) => {
+        bundleDefinitionIndexActiveSet((bundleDefinitionIndexActive = 0) => {
+          const _bundleDefinitionIndexActive = !bundleDefinitionIndexActive
+            ? 1
+            : 0;
 
-        activeFlagSet((activeFlag = false) => !activeFlag);
+          _animation(event, !!_bundleDefinitionIndexActive);
 
-        _activeFlagSet(false);
+          return _bundleDefinitionIndexActive;
+        });
       }}
     >
       <pixiLayoutContainer
@@ -164,14 +162,15 @@ const LayoutContainer_ = ({
 };
 
 const Home = () => {
-  const [assetAliasIndexActive, assetAliasIndexActiveSet] = useState(0);
+  const [bundleDefinitionIndexActive, bundleDefinitionIndexActiveSet] =
+    useState(undefined);
 
   return (
     <div className={['Home', style.Home].join(' ')}>
       <Application_ backgroundColor={0x1099bb}>
         <LayoutContainer_
-          assetAliasIndexActive={assetAliasIndexActive}
-          assetAliasIndexActiveSet={assetAliasIndexActiveSet}
+          bundleDefinitionIndexActive={bundleDefinitionIndexActive}
+          bundleDefinitionIndexActiveSet={bundleDefinitionIndexActiveSet}
         />
       </Application_>
     </div>
