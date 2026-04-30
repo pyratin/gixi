@@ -1,37 +1,21 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useExtend } from '@pixi/react';
-import '@pixi/layout';
+import * as pixiLayout from '@pixi/layout';
 import { LayoutContainer } from '@pixi/layout/components';
 import * as pixiJs from 'pixi.js';
-import { Assets, AnimatedSprite, Graphics, Circle } from 'pixi.js';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
-import gsapPixiPlugin from 'gsap/PixiPlugin';
+import { Assets, AnimatedSprite } from 'pixi.js';
 
 import Application_ from './Component/Application_';
 import style from './index.module.scss';
 
-gsap.registerPlugin(useGSAP, gsapPixiPlugin);
-
-gsapPixiPlugin.registerPIXI(pixiJs);
-
-const textureCollection = await Assets.load(
-  '/asset/sprite/0123456789.json'
-).then(({ textures, data: { frames } }) =>
-  Object.entries(textures).map(([key, texture]) => ({
-    texture,
-    time: frames[key].duration
-  }))
+const textureCollection = await Assets.load('/asset/sprite/mc.json').then(
+  ({ textures }) => Object.values(textures)
 );
 
-const LayoutContainer__ = ({ index }) => {
-  useExtend({ LayoutContainer, AnimatedSprite, Graphics });
+const LayoutContainer__ = () => {
+  useExtend({ LayoutContainer, AnimatedSprite });
 
   const ref = useRef(undefined);
-
-  const [_activeFlag, _activeFlagSet] = useState(false);
-
-  const [activeFlag, activeFlagSet] = useState(false);
 
   useEffect(() => {
     const refCurrent = /** @type {LayoutContainer} */ (ref.current);
@@ -40,32 +24,41 @@ const LayoutContainer__ = ({ index }) => {
       refCurrent.getChildByLabel('animatedSprite')
     );
 
-    refCurrentAnimatedSprite.play();
+    refCurrentAnimatedSprite.gotoAndPlay(
+      (Math.random() * textureCollection.length) | 0
+    );
   }, []);
 
   useEffect(() => {
     const refCurrent = /** @type {LayoutContainer} */ (ref.current);
 
-    const refCurrentGraphics = /** @type {Graphics} */ (
-      refCurrent.getChildByLabel('graphics-container').getChildAt(0)
+    const randomDefinition = Object.fromEntries(
+      ['left', 'top', 'scale', 'angle'].map((key) => [key, Math.random()])
     );
 
     const onRefCurrentLayoutHandle = () => {
-      const { layout: { _computedLayout: { width = 0 } = {} } = {} } =
-        refCurrent;
+      const {
+        parent: {
+          parent: {
+            layout: { _computedLayout: { width = 0, height = 0 } } = {}
+          } = {}
+        } = {},
+        layout: {
+          _computedLayout: { width: _width = 0, height: _height = 0 } = {}
+        } = {}
+      } = refCurrent;
 
       Object.assign(
         refCurrent,
         /** @type {pixiJs.ContainerOptions} */ ({
-          hitArea: new Circle(width / 2, width / 2, width / 2)
+          layout: /** @type {pixiLayout.LayoutOptions} */ ({
+            left: randomDefinition.left * width - _width / 2,
+            top: randomDefinition.top * height - _height / 2
+          }),
+          scale: randomDefinition.scale * 0.5 + 1,
+          angle: randomDefinition.angle * 360
         })
       );
-
-      refCurrentGraphics
-        .clear()
-        .circle(0, 0, width / 2)
-        .fill({ color: 0xffffff, alpha: 0.5 })
-        .stroke({ alignment: 1, width: 10, color: 0x000000, alpha: 0.5 });
     };
 
     refCurrent.on('layout', onRefCurrentLayoutHandle);
@@ -75,79 +68,22 @@ const LayoutContainer__ = ({ index }) => {
     };
   }, []);
 
-  useGSAP(
-    () => {
-      const refCurrent = /** @type {LayoutContainer} */ (ref.current);
-
-      _activeFlag &&
-        gsap.to(refCurrent, {
-          keyframes: [
-            { pixi: { x: '-=1', y: '-=1', angle: '-=5', scale: '-=.1' } },
-            { pixi: { x: '+=2', y: '+=2', angle: '+=10', scale: '+=.2' } },
-            { pixi: { x: '-=1', y: '-=1', angle: '-=5', scale: '-=.1' } }
-          ],
-          duration: 0.5,
-          ease: 'back'
-        });
-    },
-    { dependencies: [_activeFlag] }
-  );
-
-  useGSAP(
-    () => {
-      const refCurrent = /** @type {LayoutContainer} */ (ref.current);
-
-      gsap.to(refCurrent, {
-        pixi: activeFlag ? { y: '-=50', scale: '+=.15' } : { y: 0, scale: 1 },
-        duration: 0.5,
-        ease: 'elastic'
-      });
-    },
-    { dependencies: [activeFlag] }
-  );
-
   return (
     <pixiLayoutContainer
       ref={ref}
       layout={{
-        position: 'relative',
+        position: 'absolute',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 40,
         borderWidth: 0,
-        borderColor: 0x000000,
-        borderRadius: 100
-      }}
-      eventMode='static'
-      cursor='pointer'
-      onPointerEnter={() => _activeFlagSet(true)}
-      onPointerLeave={() => _activeFlagSet(false)}
-      onPointerTap={() => {
-        activeFlagSet((activeFlag) => !activeFlag);
-
-        _activeFlagSet(false);
+        borderColor: 0x000000
       }}
     >
-      <pixiLayoutContainer
-        label='graphics-container'
-        layout={{
-          position: 'absolute',
-          width: '100%',
-          height: '100%',
-          borderWidth: 0,
-          borderColor: 0x000000
-        }}
-        eventMode='none'
-      >
-        <pixiGraphics draw={() => {}} layout={{ position: 'absolute' }} />
-      </pixiLayoutContainer>
-
       <pixiAnimatedSprite
         label='animatedSprite'
         textures={textureCollection}
         layout={{}}
-        scale={2}
-        animationSpeed={!index ? 0.5 : 1}
+        animationSpeed={0.5}
       />
     </pixiLayoutContainer>
   );
@@ -159,15 +95,17 @@ const LayoutContainer_ = () => {
   return (
     <pixiLayoutContainer
       layout={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 25,
         borderWidth: 0,
         borderColor: 0x000000
       }}
     >
-      {Array.from({ length: 2 }).map((_, index) => (
-        <LayoutContainer__ key={index} index={index} />
+      {Array.from({ length: 50 }).map((_, index) => (
+        <LayoutContainer__ key={index} />
       ))}
     </pixiLayoutContainer>
   );
