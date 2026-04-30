@@ -54,6 +54,8 @@ const Application_ = ({
     <Application
       resizeTo={window}
       backgroundColor={backgroundColor}
+      useBackBuffer
+      antialias
       onInit={() => initializedSet(true)}
     >
       {initialized && <Application__>{children}</Application__>}
