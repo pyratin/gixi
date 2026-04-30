@@ -13,6 +13,7 @@
     "moduleResolution": "bundler",
     "noUncheckedSideEffectImports": false,
     "jsx": "react-jsx",
+    "skipLibCheck": true,
     "paths": {
       "#browser/*": [
         "./source/browser/*"
