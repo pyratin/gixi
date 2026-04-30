@@ -26,6 +26,8 @@ const LayoutContainer_ = () => {
 
   const [_activeFlag, _activeFlagSet] = useState(false);
 
+  const [activeFlag, activeFlagSet] = useState(false);
+
   useEffect(() => {
     const refCurrent = /** @type {LayoutContainer} */ (ref.current);
 
@@ -74,7 +76,20 @@ const LayoutContainer_ = () => {
           ease: 'bounce'
         });
     },
-    { dependencies: [_activeFlag] }
+    { dependencies: [_activeFlag], revertOnUpdate: true }
+  );
+
+  useGSAP(
+    () => {
+      const refCurrent = /** @type {LayoutContainer} */ (ref.current);
+
+      gsap.to(refCurrent, {
+        pixi: { y: activeFlag ? '-=200' : 0 },
+        duration: 0.5,
+        ease: 'bounce'
+      });
+    },
+    { dependencies: [activeFlag], revertOnUpdate: true }
   );
 
   return (
@@ -90,6 +105,11 @@ const LayoutContainer_ = () => {
       cursor='pointer'
       onPointerEnter={() => _activeFlagSet(true)}
       onPointerLeave={() => _activeFlagSet(false)}
+      onPointerTap={() => {
+        activeFlagSet((activeFlag) => !activeFlag);
+
+        _activeFlagSet(false);
+      }}
     >
       <pixiLayoutContainer
         label='graphics-container'
