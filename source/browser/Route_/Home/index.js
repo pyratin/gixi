@@ -83,7 +83,8 @@ const LayoutContainer__ = ({ index }) => {
         gsap.to(refCurrent, {
           keyframes: [
             { pixi: { x: '-=1', y: '-=1', angle: '-=5', scale: '-=.1' } },
-            { pixi: { x: '+=1', y: '+=1', angle: '+=5', scale: '+=.1' } }
+            { pixi: { x: '+=2', y: '+=2', angle: '+=10', scale: '+=.2' } },
+            { pixi: { x: '-=1', y: '-=1', angle: '-=5', scale: '-=.1' } }
           ],
           duration: 0.5,
           ease: 'back'
@@ -97,7 +98,7 @@ const LayoutContainer__ = ({ index }) => {
       const refCurrent = /** @type {LayoutContainer} */ (ref.current);
 
       gsap.to(refCurrent, {
-        pixi: activeFlag ? { scale: '+=.15' } : { scale: 1 },
+        pixi: activeFlag ? { y: '-=50', scale: '+=.15' } : { y: 0, scale: 1 },
         duration: 0.5,
         ease: 'elastic'
       });
@@ -121,7 +122,11 @@ const LayoutContainer__ = ({ index }) => {
       cursor='pointer'
       onPointerEnter={() => _activeFlagSet(true)}
       onPointerLeave={() => _activeFlagSet(false)}
-      onPointerTap={() => activeFlagSet((activeFlag) => !activeFlag)}
+      onPointerTap={() => {
+        activeFlagSet((activeFlag) => !activeFlag);
+
+        _activeFlagSet(false);
+      }}
     >
       <pixiLayoutContainer
         label='graphics-container'
