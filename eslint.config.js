@@ -28,7 +28,7 @@ export default defineConfig([
       'react/no-unknown-property': 'off',
       '@typescript-eslint/no-unused-expressions': [
         'error',
-        { allowShortCircuit: true }
+        { allowShortCircuit: true, allowTernary: true }
       ]
     }
   }
