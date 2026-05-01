@@ -1,14 +1,5 @@
 import * as pixiJs from 'pixi.js';
-import {
-  Assets,
-  Application,
-  Container,
-  Graphics,
-  Sprite,
-  Text,
-  Texture
-} from 'pixi.js';
-import 'pixi.js/advanced-blend-modes';
+import { Assets, Application, Container, Graphics, Sprite } from 'pixi.js';
 import gsap from 'gsap';
 import gsapPixiPlugin from 'gsap/PixiPlugin';
 
@@ -17,39 +8,19 @@ import '#browser/index.scss';
 gsap.registerPlugin(gsapPixiPlugin);
 gsapPixiPlugin.registerPIXI(pixiJs);
 
-const assetAliasCollection = ['panda', 'rainbow-gradient'];
-
-const textureCollection = await Assets.load([
-  ...assetAliasCollection.map((alias) => ({
-    alias,
-    src: `/asset/sprite/${alias}.png`
-  }))
-]).then((assetObject) =>
-  assetAliasCollection.map((alias) => assetObject[alias])
+const textureCollection = await Assets.load('/asset/sprite/monsters.json').then(
+  ({ textures }) => Object.values(textures)
 );
-
-const dimension = 600;
-
-const columnCount = 5;
-
-const _dimension = dimension / columnCount;
 
 const application = new Application();
 
-await application.init({
-  resizeTo: window,
-  backgroundColor: 0xffffff,
-  useBackBuffer: true,
-  antialias: true
-});
+await application.init({ resizeTo: window, backgroundColor: 0x1099bb });
 
 document.body.appendChild(application.canvas);
 
 const container = new Container({
   position: (() => {
-    const {
-      screen: { width, height }
-    } = application;
+    const { screen: { width = 0, height = 0 } = {} } = application;
 
     return { x: width / 2, y: height / 2 };
   })()
@@ -58,121 +29,69 @@ const container = new Container({
 application.stage.addChild(container);
 
 const graphics = new Graphics()
-  .rect(-dimension / 2, -dimension / 2, dimension, dimension)
-  .stroke({ alignment: 1, width: 1, color: 0x000000 });
+  .rect(
+    ...(() => {
+      const { screen: { width = 0, height = 0 } = {} } = application;
+
+      return /** @type {const} */ ([-width / 2, -height / 2, width, height]);
+    })()
+  )
+  .stroke({ alignment: 1, width: 10, color: 0x000000 });
 
 container.addChild(graphics);
 
-[
-  'normal',
-  'add',
-  'screen',
-  'darken',
-  'lighten',
-  'color-dodge',
-  'color-burn',
-  'linear-burn',
-  'linear-dodge',
-  'linear-light',
-  'hard-light',
-  'soft-light',
-  'pin-light',
-  'difference',
-  'exclusion',
-  'overlay',
-  'saturation',
-  'color',
-  'luminosity',
-  'add-npm',
-  'subtract',
-  'divide',
-  'vivid-light',
-  'hard-mix',
-  'negation'
-].map((blendMode, index) => {
+Array.from({ length: 100 }).map((_, index) => {
   const _container = new Container({
     label: '_container',
     position: (() => {
-      const __dimension = (dimension - _dimension) / 2;
+      const { screen: { width = 0, height = 0 } = {} } = application;
 
       return {
-        x: -__dimension + (index % columnCount) * _dimension,
-        y: -__dimension + Math.floor(index / columnCount) * _dimension
+        x: -width / 2 + Math.random() * width,
+        y: -height / 2 + Math.random() * height
       };
     })()
   });
 
   container.addChild(_container);
 
-  const _graphics = new Graphics()
-    .rect(-_dimension / 2, -_dimension / 2, _dimension, _dimension)
-    .stroke({ alignment: 1, width: 1, color: 0x000000 });
-
-  _container.addChild(_graphics);
-
   const sprite = new Sprite({
     label: 'sprite',
-    texture: textureCollection[0],
+    texture: textureCollection[index % textureCollection.length],
     anchor: 0.5,
-    width: 100,
-    height: 100
+    tint: Math.random() * 0xffffff
   });
 
   _container.addChild(sprite);
-
-  const _sprite = new Sprite({
-    texture: textureCollection[1],
-    anchor: 0.5,
-    width: _dimension,
-    height: _dimension,
-    blendMode: /** @type {pixiJs.BLEND_MODES} */ (blendMode)
-  });
-
-  _container.addChild(_sprite);
-
-  const text = new Text(
-    /** @type {pixiJs.CanvasTextOptions} */ ({
-      text: blendMode,
-      anchor: 0.5,
-      position: { x: 0, y: _dimension / 2 },
-      style: {
-        fontSize: 16
-      }
-    })
-  );
-
-  Object.assign(
-    text,
-    /** @type {pixiJs.CanvasTextOptions} */ ({
-      position: (() => {
-        const { height } = text;
-
-        return { x: 0, y: (_dimension - height) / 2 };
-      })()
-    })
-  );
-
-  const __sprite = new Sprite({
-    texture: Texture.WHITE,
-    anchor: 0.5,
-    position: text.position,
-    width: text.width,
-    height: text.height
-  });
-
-  _container.addChild(__sprite);
-
-  _container.addChild(text);
 });
 
-container
-  .getChildrenByLabel('_container')
-  .map((_container) => _container.getChildByLabel('sprite'))
-  .map((sprite, index) => {
-    gsap.to(sprite, {
-      pixi: { angle: 360 * (index % 2 ? -1 : 1) },
-      duration: 4,
-      repeat: -1,
-      ease: 'none'
-    });
-  });
+gsap.to(
+  container
+    .getChildrenByLabel('_container')
+    .map((_container) => _container.getChildByLabel('sprite')),
+  { pixi: { angle: 360 }, duration: 1, repeat: -1, ease: 'none' }
+);
+
+gsap.to(container, {
+  pixi: { angle: 360 },
+  duration: 4,
+  repeat: -1,
+  ease: 'none'
+});
+
+gsap.fromTo(
+  container,
+  { pixi: { scale: 0 } },
+  { scale: 1, duration: 2, repeat: -1, yoyo: true, ease: 'none' }
+);
+
+Object.assign(
+  application.stage,
+  /** @type {pixiJs.ContainerOptions} */ ({
+    eventMode: 'static'
+  })
+);
+
+application.stage.on('pointertap', () => {
+  container.cacheAsTexture(!container.isCachedAsTexture);
+});
