@@ -1,21 +1,16 @@
-import * as pixiJs from 'pixi.js';
 import {
   Assets,
   Application,
   Container,
+  Graphics,
   AnimatedSprite,
-  Graphics
+  getLocalBounds
 } from 'pixi.js';
 
 import '#browser/index.scss';
 
-const textureCollection = await Assets.load(
-  '/asset/sprite/0123456789.json'
-).then(({ textures, data: { frames } }) =>
-  Object.entries(textures).map(([key, texture]) => ({
-    texture,
-    time: frames[key].duration
-  }))
+const textureCollection = await Assets.load('/asset/sprite/mc.json').then(
+  ({ textures }) => Object.values(textures)
 );
 
 const application = new Application();
@@ -34,23 +29,45 @@ const container = new Container({
 
 application.stage.addChild(container);
 
-Array.from({ length: 2 }).map((_, index) => {
-  const _container = new Container();
+const graphics = new Graphics()
+  .rect(
+    ...(() => {
+      const { width, height } = application.screen;
+
+      return /** @type {const} */ ([-width / 2, -height / 2, width, height]);
+    })()
+  )
+  .stroke({ alignment: 1, width: 10, color: 0x000000 });
+
+container.addChild(graphics);
+
+Array.from({ length: 50 }).map(() => {
+  const _container = new Container({
+    position: (() => {
+      const { width, height } = application.screen;
+
+      return {
+        x: -width / 2 + Math.random() * width,
+        y: -height / 2 + Math.random() * height
+      };
+    })(),
+    scale: Math.random() * 0.5 + 1,
+    angle: Math.random() * 360
+  });
 
   container.addChild(_container);
 
   const animatedSprite = new AnimatedSprite({
     textures: textureCollection,
     anchor: 0.5,
-    scale: 4,
-    animationSpeed: !index ? 0.5 : 1
+    animationSpeed: 0.5
   });
 
   _container.addChild(animatedSprite);
 
-  animatedSprite.play();
+  animatedSprite.gotoAndPlay((Math.random() * textureCollection.length) | 0);
 
-  const graphics = new Graphics()
+  const _graphics = new Graphics()
     .rect(
       ...(() => {
         const { x, y, width, height } = _container.getLocalBounds();
@@ -58,18 +75,12 @@ Array.from({ length: 2 }).map((_, index) => {
         return /** @type {const} */ ([x, y, width, height]);
       })()
     )
-    .stroke({ alignment: 1, width: 1, color: 0x000000 });
+    .stroke({
+      alignment: 1,
+      width: 1,
+      color: 0x000000,
+      alpha: 0.25
+    });
 
-  _container.addChild(graphics);
-
-  Object.assign(
-    _container,
-    /** @type {pixiJs.ContainerOptions} */ ({
-      position: (() => {
-        const { width } = container;
-
-        return { x: (width / 2) * (!index ? -1 : 1), y: 0 };
-      })()
-    })
-  );
+  _container.addChild(_graphics);
 });
