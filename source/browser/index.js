@@ -1,3 +1,4 @@
+import * as pixiJs from 'pixi.js';
 import {
   Assets,
   Application,
@@ -5,10 +6,16 @@ import {
   Graphics,
   AnimatedSprite
 } from 'pixi.js';
+import gsap from 'gsap';
+import gsapPixiPlugin from 'gsap/PixiPlugin';
 
 import '#browser/index.scss';
 
-const textureCollection = await Assets.load('/asset/sprite/mc.json').then(
+gsap.registerPlugin(gsapPixiPlugin);
+
+gsapPixiPlugin.registerPIXI(pixiJs);
+
+const textureCollection = await Assets.load('/asset/sprite/fighter.json').then(
   ({ textures }) => Object.values(textures)
 );
 
@@ -19,10 +26,10 @@ await application.init({ resizeTo: window, backgroundColor: 0x1099bb });
 document.body.appendChild(application.canvas);
 
 const container = new Container({
-  position: (() => {
+  ...(() => {
     const { width, height } = application.screen;
 
-    return { x: width / 2, y: height / 2 };
+    return { position: { x: width / 2, y: height / 2 } };
   })()
 });
 
@@ -40,46 +47,35 @@ const graphics = new Graphics()
 
 container.addChild(graphics);
 
-Array.from({ length: 50 }).map(() => {
-  const _container = new Container({
-    position: (() => {
-      const { width, height } = application.screen;
+const _container = new Container();
 
-      return {
-        x: -width / 2 + Math.random() * width,
-        y: -height / 2 + Math.random() * height
-      };
-    })(),
-    scale: Math.random() * 0.5 + 1,
-    angle: Math.random() * 360
-  });
+container.addChild(_container);
 
-  container.addChild(_container);
+const animatedSprite = new AnimatedSprite({
+  textures: textureCollection,
+  anchor: 0.5,
+  animationSpeed: 0.5
+});
 
-  const animatedSprite = new AnimatedSprite({
-    textures: textureCollection,
-    anchor: 0.5,
-    animationSpeed: 0.5
-  });
+_container.addChild(animatedSprite);
 
-  _container.addChild(animatedSprite);
+animatedSprite.play();
 
-  animatedSprite.gotoAndPlay((Math.random() * textureCollection.length) | 0);
+const _graphics = new Graphics()
+  .rect(
+    ...(() => {
+      const { width, height } = _container.getLocalBounds();
 
-  const _graphics = new Graphics()
-    .rect(
-      ...(() => {
-        const { x, y, width, height } = _container.getLocalBounds();
+      return /** @type {const} */ ([-width / 2, -height / 2, width, height]);
+    })()
+  )
+  .stroke({ alignment: 1, width: 1, color: 0x000000 });
 
-        return /** @type {const} */ ([x, y, width, height]);
-      })()
-    )
-    .stroke({
-      alignment: 1,
-      width: 1,
-      color: 0x000000,
-      alpha: 0.25
-    });
+_container.addChild(_graphics);
 
-  _container.addChild(_graphics);
+gsap.to(_container, {
+  pixi: { angle: 360 },
+  duration: 4,
+  repeat: -1,
+  ease: 'none'
 });
