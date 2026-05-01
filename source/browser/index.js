@@ -1,24 +1,26 @@
-import * as pixiJs from 'pixi.js';
 import { Assets, Application, Container, Graphics, Sprite } from 'pixi.js';
-import gsap from 'gsap';
-import gsapPixiPlugin from 'gsap/PixiPlugin';
 
 import '#browser/index.scss';
 
-gsap.registerPlugin(gsapPixiPlugin);
+/** @type {[string, string[]][]} */
+const bundleDefinitionCollection = [
+  ['start-screen', ['eggHead']],
+  ['game-screen', ['flowerTop']]
+];
 
-gsapPixiPlugin.registerPIXI(pixiJs);
+Assets.init({
+  manifest: {
+    bundles: bundleDefinitionCollection.map(([name, assetAliasCollection]) => ({
+      name,
+      assets: assetAliasCollection.map((alias) => ({
+        alias,
+        src: `/asset/sprite/${alias}.png`
+      }))
+    }))
+  }
+});
 
-const assetAliasCollection = ['flowerTop', 'eggHead'];
-
-Assets.add(
-  assetAliasCollection.map((alias) => ({
-    alias,
-    src: `/asset/sprite/${alias}.png`
-  }))
-);
-
-Assets.backgroundLoad(assetAliasCollection);
+Assets.backgroundLoadBundle(bundleDefinitionCollection.map(([name]) => name));
 
 const application = new Application();
 
@@ -40,7 +42,7 @@ const graphics = new Graphics()
   .rect(
     ...(() => {
       const {
-        screen: { width, height }
+        screen: { width = 0, height = 0 }
       } = application;
 
       return /** @type {const} */ ([-width / 2, -height / 2, width, height]);
@@ -50,26 +52,30 @@ const graphics = new Graphics()
 
 container.addChild(graphics);
 
-let assetAliasIndexActive = 0;
+let bundleDefinitionIndexActive = 0;
 
-const _container = new Container({
-  eventMode: 'static',
-  cursor: 'pointer',
-  onpointertap: async (event) => {
-    assetAliasIndexActive = !assetAliasIndexActive ? 1 : 0;
+const bundleRender = async () => {
+  container.children.map((child) => child.destroy());
 
-    Object.assign(
-      event.target.getChildByLabel('graphics'),
-      /** @type {pixiJs.SpriteOptions} */ ({
-        texture: await Assets.load(assetAliasCollection[assetAliasIndexActive])
-      })
-    );
-  }
-});
+  const _container = new Container({
+    eventMode: 'static',
+    cursor: 'pointer',
+    onpointertap: () => {
+      bundleDefinitionIndexActive = !bundleDefinitionIndexActive ? 1 : 0;
 
-container.addChild(_container);
+      bundleRender();
+    }
+  });
 
-Assets.load(assetAliasCollection[assetAliasIndexActive]).then((texture) => {
+  container.addChild(_container);
+
+  const [name, [alias]] =
+    bundleDefinitionCollection[bundleDefinitionIndexActive];
+
+  const texture = await Assets.loadBundle(name).then(
+    (bundleObject) => bundleObject[alias]
+  );
+
   const sprite = new Sprite({ label: 'graphics', texture, anchor: 0.5 });
 
   _container.addChild(sprite);
@@ -85,11 +91,6 @@ Assets.load(assetAliasCollection[assetAliasIndexActive]).then((texture) => {
     .stroke({ alignment: 1, width: 1, color: 0x000000 });
 
   _container.addChild(_graphics);
-});
+};
 
-gsap.to(_container, {
-  pixi: { angle: 0 },
-  duration: 4,
-  repeat: -1,
-  ease: 'none'
-});
+bundleRender();
