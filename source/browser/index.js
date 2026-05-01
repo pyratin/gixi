@@ -3,8 +3,7 @@ import {
   Application,
   Container,
   Graphics,
-  AnimatedSprite,
-  getLocalBounds
+  AnimatedSprite
 } from 'pixi.js';
 
 import '#browser/index.scss';
