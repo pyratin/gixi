@@ -6,14 +6,14 @@ import { DropShadowFilter } from 'pixi-filters';
 
 import '#browser/index.scss';
 
+gsap.registerPlugin(gsapPixiPlugin);
+gsapPixiPlugin.registerPIXI(pixiJs);
+
 await Assets.load({
   alias: 'Grandstander',
   src: '/asset/font/Grandstander/Grandstander-VariableFont_wght.ttf',
   data: { family: 'Grandstander' }
 });
-
-gsap.registerPlugin(gsapPixiPlugin);
-gsapPixiPlugin.registerPIXI(pixiJs);
 
 const application = new Application();
 
@@ -50,7 +50,10 @@ const _container = new Container();
 container.addChild(_container);
 
 ['MAHA', 'DEVAN', 'SUBRA', 'MANIAN'].reduce((memo, textFragment) => {
-  const __container = new Container({ label: '__container' });
+  const __container = new Container({
+    label: '__container',
+    filters: [new DropShadowFilter({ offset: { x: 0, y: 10 }, blur: 1 })]
+  });
 
   _container.addChild(__container);
 
@@ -69,7 +72,7 @@ container.addChild(_container);
   const _graphics = new Graphics()
     .roundRect(
       ...(() => {
-        const { width = 0, height = 0 } = text;
+        const { width, height } = text;
 
         const padding = 10;
 
@@ -82,7 +85,7 @@ container.addChild(_container);
         ]);
       })()
     )
-    .fill({ color: 0xed427c })
+    .fill({ color: 0x000000 })
     .stroke({ alignment: 1, width: 2, color: 0xffffff });
 
   __container.addChild(_graphics, text);
@@ -118,31 +121,16 @@ Object.assign(
       const { width: _width = 0, height: _height = 0 } = _container;
 
       return { x: (width - _width) / 2, y: (height - _height) / 2 };
-    })(),
-    filters: [
-      new DropShadowFilter({
-        offset: { x: 0, y: 10 },
-        blur: 2,
-        alpha: 0.5,
-        color: 0x000000
-      })
-    ]
+    })()
   })
 );
-
-gsap.to(_container.getChildrenByLabel('__container'), {
-  // pixi: { angle: 360 },
-  duration: 1,
-  repeat: -1,
-  ease: 'none'
-});
 
 gsap.from(_container.getChildrenByLabel('__container'), {
   pixi: { alpha: 0, y: -100, angle: 'random(-80, 80)' },
   duration: 1,
   repeat: -1,
   yoyo: true,
-  ease: 'back',
-  stagger: 0.1,
-  repeatDelay: 1
+  repeatDelay: 1,
+  stagger: 0.25,
+  ease: 'back'
 });
