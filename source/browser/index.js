@@ -2,6 +2,7 @@ import * as pixiJs from 'pixi.js';
 import { Assets, Application, Container, Graphics, Text } from 'pixi.js';
 import gsap from 'gsap';
 import gsapPixiPlugin from 'gsap/PixiPlugin';
+import { DropShadowFilter } from 'pixi-filters';
 
 import '#browser/index.scss';
 
@@ -117,7 +118,15 @@ Object.assign(
       const { width: _width = 0, height: _height = 0 } = _container;
 
       return { x: (width - _width) / 2, y: (height - _height) / 2 };
-    })()
+    })(),
+    filters: [
+      new DropShadowFilter({
+        offset: { x: 0, y: 10 },
+        blur: 2,
+        alpha: 0.5,
+        color: 0x000000
+      })
+    ]
   })
 );
 
