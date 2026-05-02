@@ -1,19 +1,14 @@
 import * as pixiJs from 'pixi.js';
-import { Assets, Application, Container, Graphics, Text } from 'pixi.js';
+import { Application, Graphics } from 'pixi.js';
+import { DropShadowFilter } from 'pixi-filters';
 import gsap from 'gsap';
 import gsapPixiPlugin from 'gsap/PixiPlugin';
-import { DropShadowFilter } from 'pixi-filters';
+import gsapPhysics2D from 'gsap/Physics2DPlugin';
 
 import '#browser/index.scss';
 
-gsap.registerPlugin(gsapPixiPlugin);
+gsap.registerPlugin(gsapPixiPlugin, gsapPhysics2D);
 gsapPixiPlugin.registerPIXI(pixiJs);
-
-await Assets.load({
-  alias: 'Grandstander',
-  src: '/asset/font/Grandstander/Grandstander-VariableFont_wght.ttf',
-  data: { family: 'Grandstander' }
-});
 
 const application = new Application();
 
@@ -21,116 +16,42 @@ await application.init({ resizeTo: window, backgroundColor: 0x1099bb });
 
 document.body.appendChild(application.canvas);
 
-const container = new Container({
-  ...(() => {
-    const { screen: { width = 0, height = 0 } = {} } = application;
-
-    const position = { x: width / 2, y: height / 2 };
-
-    return { position, pivot: position };
-  })()
-});
-
-application.stage.addChild(container);
-
-const graphics = new Graphics()
-  .rect(
-    ...(() => {
-      const { screen: { width = 0, height = 0 } = {} } = application;
-
-      return /** @type {const} */ ([0, 0, width, height]);
-    })()
-  )
-  .stroke({ alignment: 1, width: 10, color: 0x000000 });
-
-container.addChild(graphics);
-
-const _container = new Container();
-
-container.addChild(_container);
-
-['MAHA', 'DEVAN', 'SUBRA', 'MANIAN'].reduce((memo, textFragment) => {
-  const __container = new Container({
-    label: '__container',
-    filters: [new DropShadowFilter({ offset: { x: 0, y: 10 }, blur: 1 })]
-  });
-
-  _container.addChild(__container);
-
-  const text = new Text(
-    /** @type {pixiJs.CanvasTextOptions} */ ({
-      text: textFragment,
-      style: {
-        fontFamily: 'Grandstander',
-        fontSize: 32,
-        fontWeight: 'bolder',
-        fill: 0xffffff
-      }
-    })
-  );
-
-  const _graphics = new Graphics()
-    .roundRect(
-      ...(() => {
-        const { width, height } = text;
-
-        const padding = 10;
-
-        return /** @type {const} */ ([
-          -padding,
-          -padding,
-          width + padding * 2,
-          height + padding * 2,
-          8
-        ]);
-      })()
-    )
-    .fill({ color: 0x000000 })
-    .stroke({ alignment: 1, width: 2, color: 0xffffff });
-
-  __container.addChild(_graphics, text);
-
-  Object.assign(
-    __container,
-    /** @type {pixiJs.ContainerOptions} */ ({
-      ...(() => {
-        const { width, height } = __container;
-
-        return {
-          position: {
-            x:
-              memo.reduce((_memo, { width }) => _memo + width + 10, 0) +
-              width / 2,
-            y: height / 2
-          },
-          pivot: { x: width / 2, y: height / 2 }
-        };
-      })()
-    })
-  );
-
-  return [...memo, __container];
-}, []);
-
 Object.assign(
-  _container,
+  application.stage,
   /** @type {pixiJs.ContainerOptions} */ ({
-    position: (() => {
-      const { screen: { width = 0, height = 0 } = {} } = application;
-
-      const { width: _width = 0, height: _height = 0 } = _container;
-
-      return { x: (width - _width) / 2, y: (height - _height) / 2 };
-    })()
+    eventMode: 'static',
+    cursor: 'pointer',
+    hitArea: application.screen
   })
 );
 
-gsap.from(_container.getChildrenByLabel('__container'), {
-  pixi: { alpha: 0, y: -100, angle: 'random(-80, 80)' },
-  duration: 1,
-  repeat: -1,
-  yoyo: true,
-  repeatDelay: 1,
-  stagger: 0.25,
-  ease: 'back'
+application.stage.on('pointertap', ({ clientX, clientY }) => {
+  Array.from({ length: gsap.utils.random(15, 30, 1) }).map(() => {
+    const graphics = new Graphics({
+      position: { x: clientX, y: clientY },
+      scale: 0,
+      filters: [new DropShadowFilter()]
+    })
+      .circle(0, 0, gsap.utils.random(20, 40))
+      .fill({ color: 0xffffff });
+
+    application.stage.addChild(graphics);
+
+    gsap
+      .timeline({ onComplete: () => graphics.destroy() })
+      .to(graphics, {
+        pixi: { scale: gsap.utils.random(0.25, 1) },
+        duration: 0.02,
+        ease: 'power3.out'
+      })
+      .to(graphics, {
+        physics2D: {
+          velocity: gsap.utils.random(500, 1000),
+          gravity: 1500,
+          angle: gsap.utils.random(0, 360)
+        },
+        duration: 2,
+        ease: 'none'
+      });
+  });
 });
