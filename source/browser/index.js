@@ -1,56 +1,24 @@
-import * as pixiJs from 'pixi.js';
-import { Application, Graphics } from 'pixi.js';
-import { DropShadowFilter } from 'pixi-filters';
-import gsap from 'gsap';
-import gsapPixiPlugin from 'gsap/PixiPlugin';
-import gsapPhysics2DPlugin from 'gsap/Physics2DPlugin';
+import { createRoot } from 'react-dom/client';
+import { StrictMode } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 
+import { ContextProvider } from '#browser/store';
+import Route_ from '#browser/Route_';
+import Home from '#browser/Route_/Home';
 import '#browser/index.scss';
 
-gsap.registerPlugin(gsapPixiPlugin, gsapPhysics2DPlugin);
-gsapPixiPlugin.registerPIXI(pixiJs);
+createRoot(document.body).render(
+  <StrictMode>
+    <ContextProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path='/' element={<Route_ />}>
+            <Route index element={<Navigate to='/Home' />} />
 
-const application = new Application();
-
-await application.init({ resizeTo: window, backgroundColor: 0x1099bb });
-
-document.body.appendChild(application.canvas);
-
-Object.assign(
-  application.stage,
-  /** @type {pixiJs.ContainerOptions} */ ({
-    eventMode: 'static',
-    cursor: 'pointer',
-    hitArea: application.screen,
-    onpointertap: ({ clientX, clientY }) => {
-      Array.from({ length: gsap.utils.random(15, 30, 1) }).map(() => {
-        const graphics = new Graphics({
-          position: { x: clientX, y: clientY },
-          scale: 0,
-          filters: [new DropShadowFilter()]
-        })
-          .circle(0, 0, gsap.utils.random(20, 40))
-          .fill({ color: 0xffffff });
-
-        application.stage.addChild(graphics);
-
-        gsap
-          .timeline()
-          .to(graphics, {
-            pixi: { scale: gsap.utils.random(0.25, 1) },
-            duration: 0.025,
-            ease: 'power3.out'
-          })
-          .to(graphics, {
-            physics2D: {
-              velocity: gsap.utils.random(500, 1000),
-              gravity: 1500,
-              angle: gsap.utils.random(0, 360)
-            },
-            duration: 2,
-            ease: 'none'
-          });
-      });
-    }
-  })
+            <Route path='Home' element={<Home />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ContextProvider>
+  </StrictMode>
 );

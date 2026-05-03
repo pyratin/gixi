@@ -1,42 +1,30 @@
 import { useRef, useEffect } from 'react';
 import { useExtend } from '@pixi/react';
-import * as pixiLayout from '@pixi/layout';
-import { LayoutContainer } from '@pixi/layout/components';
 import * as pixiJs from 'pixi.js';
-import { Assets, Sprite, Graphics, Text } from 'pixi.js';
-import 'pixi.js/advanced-blend-modes';
-import { useGSAP } from '@gsap/react';
+import { Assets, Graphics, AnimatedSprite } from 'pixi.js';
+import '@pixi/layout';
+import { LayoutContainer } from '@pixi/layout/components';
 import gsap from 'gsap';
 import gsapPixiPlugin from 'gsap/PixiPlugin';
+import { useGSAP } from '@gsap/react';
 
 import Application_ from './Component/Application_';
 import style from './index.module.scss';
 
-gsap.registerPlugin(useGSAP, gsapPixiPlugin);
+gsap.registerPlugin(gsapPixiPlugin);
 gsapPixiPlugin.registerPIXI(pixiJs);
 
-const dimensionMinimum = 707;
-
-const columnCount = 5;
-
-const assetAliasCollection = ['panda', 'rainbow-gradient'];
-
-const textureCollection = await Assets.load([
-  ...assetAliasCollection.map((alias) => ({
-    alias,
-    src: `/asset/sprite/${alias}.png`
-  })),
-  {
-    alias: 'short-stack',
-    src: '/asset/font/Short_Stack/ShortStack-Regular.ttf',
-    data: { family: 'short-stack' }
-  }
-]).then((assetObject) =>
-  assetAliasCollection.map((alias) => assetObject[alias])
+const textureCollection = await Assets.load(
+  '/asset/sprite/0123456789.json'
+).then(({ textures, data: { frames } }) =>
+  Object.entries(textures).map(([key, texture]) => ({
+    texture,
+    time: frames[key].duration
+  }))
 );
 
-const LayoutContainer__ = ({ index, blendMode }) => {
-  useExtend({ LayoutContainer, Sprite, Graphics, Text });
+const LayoutContainer__ = ({ index }) => {
+  useExtend({ LayoutContainer, AnimatedSprite });
 
   const ref = useRef(undefined);
 
@@ -44,34 +32,18 @@ const LayoutContainer__ = ({ index, blendMode }) => {
     const refCurrent = /** @type {LayoutContainer} */ (ref.current);
 
     const refCurrentGraphics = /** @type {Graphics} */ (
-      refCurrent.getChildByLabel('graphics-container').getChildAt(0)
+      refCurrent.getChildByLabel('graphics')
     );
 
     const onRefCurrentLayoutHandle = () => {
       const {
-        parent: {
-          parent: { layout: { _computedLayout: { width = 0 } = {} } = {} } = {}
-        } = {}
+        layout: { _computedLayout: { width = 0, height = 0 } = {} } = {}
       } = refCurrent;
-
-      const dimension = width / columnCount;
 
       refCurrentGraphics
         .clear()
-        .rect(0, 0, dimension, dimension)
-        .stroke({ alignment: 1, width: 1, color: 0x000000, alpha: 0.25 });
-
-      Object.assign(
-        refCurrent,
-        /** @type {pixiJs.ContainerOptions} */ ({
-          layout: /** @type {pixiLayout.LayoutOptions} */ ({
-            width: dimension,
-            height: dimension,
-            left: (index % columnCount) * dimension,
-            top: Math.floor(index / columnCount) * dimension
-          })
-        })
-      );
+        .rect(0, 0, width, height)
+        .stroke({ alignment: 1, width: 1, color: 0x000000 });
     };
 
     refCurrent.on('layout', onRefCurrentLayoutHandle);
@@ -79,19 +51,83 @@ const LayoutContainer__ = ({ index, blendMode }) => {
     return () => {
       refCurrent.off('layout', onRefCurrentLayoutHandle);
     };
-  }, [index]);
+  }, []);
+
+  useEffect(() => {
+    const refCurrent = /** @type {LayoutContainer} */ (ref.current);
+
+    const refCurrentAnimatedSprite = /** @type {AnimatedSprite} */ (
+      refCurrent.getChildByLabel('animatedSprite')
+    );
+
+    refCurrentAnimatedSprite.play();
+  }, []);
+
+  return (
+    <pixiLayoutContainer
+      ref={ref}
+      layout={{
+        position: 'relative',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        borderWidth: 0,
+        borderColor: 0x000000
+      }}
+    >
+      <pixiAnimatedSprite
+        label='animatedSprite'
+        textures={textureCollection}
+        layout={{}}
+        scale={2}
+        animationSpeed={!index ? 0.5 : 1}
+      />
+
+      <pixiGraphics
+        label='graphics'
+        draw={() => {}}
+        layout={{ position: 'absolute' }}
+      />
+    </pixiLayoutContainer>
+  );
+};
+
+const LayoutContainer_ = () => {
+  useExtend({ LayoutContainer, Graphics });
+
+  const ref = useRef(undefined);
+
+  useEffect(() => {
+    const refCurrent = /** @type {LayoutContainer} */ (ref.current);
+
+    const refCurrentGraphics = /** @type {Graphics} */ (
+      refCurrent.getChildByLabel('graphics')
+    );
+
+    const onRefCurrentLayoutHandle = () => {
+      const { layout: { _computedLayout: { width, height } = {} } = {} } =
+        refCurrent;
+
+      refCurrentGraphics
+        .clear()
+        .rect(0, 0, width, height)
+        .stroke({ alignment: 1, width: 10, color: 0x000000 });
+    };
+
+    refCurrent.on('layout', onRefCurrentLayoutHandle);
+
+    return () => {
+      refCurrent.off('layout', onRefCurrentLayoutHandle);
+    };
+  }, []);
 
   useGSAP(
     () => {
       const refCurrent = /** @type {LayoutContainer} */ (ref.current);
 
-      const refCurrentSprite = /** @type {Graphics} */ (
-        refCurrent.getChildByLabel('sprite')
-      );
-
-      gsap.to(refCurrentSprite, {
-        pixi: { angle: 360 },
-        duration: 5,
+      gsap.to(refCurrent, {
+        // pixi: { angle: 360 },
+        duration: 1,
         repeat: -1,
         ease: 'none'
       });
@@ -103,153 +139,25 @@ const LayoutContainer__ = ({ index, blendMode }) => {
     <pixiLayoutContainer
       ref={ref}
       layout={{
-        position: 'absolute',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 0,
-        borderColor: 0x000000
-      }}
-    >
-      <pixiLayoutContainer
-        label='graphics-container'
-        layout={{
-          position: 'absolute',
-          width: '100%',
-          height: '100%',
-          justifyContent: 'center',
-          alignItems: 'center',
-          borderWidth: 0,
-          borderColor: 0x000000
-        }}
-      >
-        <pixiGraphics draw={() => {}} layout={{ position: 'absolute' }} />
-      </pixiLayoutContainer>
-
-      <pixiSprite
-        label='sprite'
-        texture={textureCollection[0]}
-        layout={{
-          height: '75%',
-          objectFit: 'contain'
-        }}
-      />
-
-      <pixiSprite
-        texture={textureCollection[1]}
-        layout={{ position: 'absolute', width: '100%', height: '100%' }}
-        blendMode={blendMode}
-      />
-
-      <pixiLayoutContainer
-        layout={{
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 5,
-          borderWidth: 1,
-          borderRadius: 5,
-          borderColor: 0x000000,
-          backgroundColor: 0xffffff
-        }}
-      >
-        <pixiText
-          {...(() =>
-            /** @type {pixiJs.CanvasTextOptions} */ ({
-              text: blendMode,
-              layout: {},
-              style: {
-                fontSize: 12,
-                fontWeight: 'bolder',
-                fontFamily: 'short-stack'
-              }
-            }))()}
-        />
-      </pixiLayoutContainer>
-    </pixiLayoutContainer>
-  );
-};
-
-const LayoutContainer_ = () => {
-  useExtend({ LayoutContainer });
-
-  const ref = useRef(undefined);
-
-  useEffect(() => {
-    const refCurrent = /** @type {LayoutContainer} */ (ref.current);
-
-    const onRefCurrentLayoutHandle = () => {
-      Object.assign(
-        refCurrent,
-        /** @type {pixiJs.ContainerOptions} */ ({
-          layout: /** @type {pixiLayout.LayoutOptions} */ ({
-            ...(() => {
-              const {
-                parent: {
-                  layout: {
-                    _computedLayout: { width = 0, height = 0 } = {}
-                  } = {}
-                } = {}
-              } = refCurrent;
-
-              const dimension = Math.min(width, height, dimensionMinimum);
-
-              return {
-                width: dimension,
-                height: dimension
-              };
-            })()
-          })
-        })
-      );
-    };
-
-    refCurrent.on('layout', onRefCurrentLayoutHandle);
-
-    return () => {
-      refCurrent.on('layout', onRefCurrentLayoutHandle);
-    };
-  }, []);
-
-  return (
-    <pixiLayoutContainer
-      ref={ref}
-      layout={{
         position: 'relative',
+        width: '100%',
+        height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
+        gap: 10,
         borderWidth: 0,
         borderColor: 0x000000
       }}
     >
-      {[
-        'normal',
-        'add',
-        'screen',
-        'darken',
-        'lighten',
-        'color-dodge',
-        'color-burn',
-        'linear-burn',
-        'linear-dodge',
-        'linear-light',
-        'hard-light',
-        'soft-light',
-        'pin-light',
-        'difference',
-        'exclusion',
-        'overlay',
-        'saturation',
-        'color',
-        'luminosity',
-        'add-npm',
-        'subtract',
-        'divide',
-        'vivid-light',
-        'hard-mix',
-        'negation'
-      ].map((blendMode, index) => (
-        <LayoutContainer__ key={index} index={index} blendMode={blendMode} />
+      {Array.from({ length: 2 }).map((_, index) => (
+        <LayoutContainer__ key={index} index={index} />
       ))}
+
+      <pixiGraphics
+        label='graphics'
+        draw={() => {}}
+        layout={{ position: 'absolute' }}
+      />
     </pixiLayoutContainer>
   );
 };
@@ -257,7 +165,7 @@ const LayoutContainer_ = () => {
 const Home = () => {
   return (
     <div className={['Home', style.Home].join(' ')}>
-      <Application_ backgroundColor={0xffffff}>
+      <Application_ backgroundColor={0x1099bb}>
         <LayoutContainer_ />
       </Application_>
     </div>
