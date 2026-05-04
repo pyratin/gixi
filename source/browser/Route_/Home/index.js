@@ -1,18 +1,11 @@
 import { useRef, useEffect } from 'react';
 import { useExtend } from '@pixi/react';
-import * as pixiJs from 'pixi.js';
-import { Assets, Graphics, AnimatedSprite } from 'pixi.js';
+import { Assets, AnimatedSprite } from 'pixi.js';
 import '@pixi/layout';
 import { LayoutContainer } from '@pixi/layout/components';
-import gsap from 'gsap';
-import gsapPixiPlugin from 'gsap/PixiPlugin';
-import { useGSAP } from '@gsap/react';
 
 import Application_ from './Component/Application_';
 import style from './index.module.scss';
-
-gsap.registerPlugin(gsapPixiPlugin);
-gsapPixiPlugin.registerPIXI(pixiJs);
 
 const textureCollection = await Assets.load(
   '/asset/sprite/0123456789.json'
@@ -23,35 +16,10 @@ const textureCollection = await Assets.load(
   }))
 );
 
-const LayoutContainer__ = ({ index }) => {
+const LayoutContainer___ = ({ index }) => {
   useExtend({ LayoutContainer, AnimatedSprite });
 
   const ref = useRef(undefined);
-
-  useEffect(() => {
-    const refCurrent = /** @type {LayoutContainer} */ (ref.current);
-
-    const refCurrentGraphics = /** @type {Graphics} */ (
-      refCurrent.getChildByLabel('graphics')
-    );
-
-    const onRefCurrentLayoutHandle = () => {
-      const {
-        layout: { _computedLayout: { width = 0, height = 0 } = {} } = {}
-      } = refCurrent;
-
-      refCurrentGraphics
-        .clear()
-        .rect(0, 0, width, height)
-        .stroke({ alignment: 1, width: 1, color: 0x000000 });
-    };
-
-    refCurrent.on('layout', onRefCurrentLayoutHandle);
-
-    return () => {
-      refCurrent.off('layout', onRefCurrentLayoutHandle);
-    };
-  }, []);
 
   useEffect(() => {
     const refCurrent = /** @type {LayoutContainer} */ (ref.current);
@@ -67,11 +35,10 @@ const LayoutContainer__ = ({ index }) => {
     <pixiLayoutContainer
       ref={ref}
       layout={{
-        position: 'relative',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
-        borderWidth: 0,
+        borderWidth: 1,
         borderColor: 0x000000
       }}
     >
@@ -82,82 +49,45 @@ const LayoutContainer__ = ({ index }) => {
         scale={2}
         animationSpeed={!index ? 0.5 : 1}
       />
+    </pixiLayoutContainer>
+  );
+};
 
-      <pixiGraphics
-        label='graphics'
-        draw={() => {}}
-        layout={{ position: 'absolute' }}
-      />
+const LayoutContainer__ = () => {
+  useExtend({ LayoutContainer });
+
+  return (
+    <pixiLayoutContainer
+      layout={{
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 0,
+        borderColor: 0x000000
+      }}
+    >
+      {Array.from({ length: 2 }).map((_, index) => (
+        <LayoutContainer___ key={index} index={index} />
+      ))}
     </pixiLayoutContainer>
   );
 };
 
 const LayoutContainer_ = () => {
-  useExtend({ LayoutContainer, Graphics });
-
-  const ref = useRef(undefined);
-
-  useEffect(() => {
-    const refCurrent = /** @type {LayoutContainer} */ (ref.current);
-
-    const refCurrentGraphics = /** @type {Graphics} */ (
-      refCurrent.getChildByLabel('graphics')
-    );
-
-    const onRefCurrentLayoutHandle = () => {
-      const { layout: { _computedLayout: { width, height } = {} } = {} } =
-        refCurrent;
-
-      refCurrentGraphics
-        .clear()
-        .rect(0, 0, width, height)
-        .stroke({ alignment: 1, width: 10, color: 0x000000 });
-    };
-
-    refCurrent.on('layout', onRefCurrentLayoutHandle);
-
-    return () => {
-      refCurrent.off('layout', onRefCurrentLayoutHandle);
-    };
-  }, []);
-
-  useGSAP(
-    () => {
-      const refCurrent = /** @type {LayoutContainer} */ (ref.current);
-
-      gsap.to(refCurrent, {
-        // pixi: { angle: 360 },
-        duration: 1,
-        repeat: -1,
-        ease: 'none'
-      });
-    },
-    { dependencies: [] }
-  );
+  useExtend({ LayoutContainer });
 
   return (
     <pixiLayoutContainer
-      ref={ref}
       layout={{
         position: 'relative',
         width: '100%',
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 10,
         borderWidth: 0,
         borderColor: 0x000000
       }}
     >
-      {Array.from({ length: 2 }).map((_, index) => (
-        <LayoutContainer__ key={index} index={index} />
-      ))}
-
-      <pixiGraphics
-        label='graphics'
-        draw={() => {}}
-        layout={{ position: 'absolute' }}
-      />
+      <LayoutContainer__ />
     </pixiLayoutContainer>
   );
 };
