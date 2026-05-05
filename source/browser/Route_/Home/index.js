@@ -11,10 +11,10 @@ import { useGSAP } from '@gsap/react';
 import Application_ from './Component/Application_';
 import style from './index.module.scss';
 
-gsap.registerPlugin(useGSAP, gsapPixiPlugin);
+gsap.registerPlugin(gsapPixiPlugin, useGSAP);
 gsapPixiPlugin.registerPIXI(pixiJs);
 
-const textureCollection = await Assets.load('/asset/sprite/mc.json').then(
+const textureCollection = await Assets.load('/asset/sprite/fighter.json').then(
   ({ textures }) => Object.values(textures)
 );
 
@@ -30,87 +30,16 @@ const LayoutContainer__ = () => {
       refCurrent.getChildByLabel('animatedSprite')
     );
 
-    refCurrentAnimatedSprite.gotoAndPlay(
-      (Math.random() * textureCollection.length) | 0
-    );
+    refCurrentAnimatedSprite.play();
   }, []);
-
-  useEffect(() => {
-    const refCurrent = /** @type {LayoutContainer} */ (ref.current);
-
-    const randomDefinition = Object.fromEntries(
-      ['left', 'top'].map((key) => [key, Math.random()])
-    );
-
-    const onRefCurrentLayoutHandle = () => {
-      Object.assign(
-        refCurrent,
-        /** @type {pixiJs.ContainerOptions} */ ({
-          layout: (() => {
-            const {
-              parent: {
-                parent: {
-                  layout: {
-                    _computedLayout: { width = 0, height = 0 } = {}
-                  } = {}
-                } = {}
-              } = {},
-              layout: {
-                _computedLayout: { width: _width = 0, height: _height = 0 } = {}
-              } = {}
-            } = refCurrent;
-
-            return {
-              left: -_width / 2 + randomDefinition.left * width,
-              top: -_height / 2 + randomDefinition.top * height
-            };
-          })(),
-          scale: Math.random() * 0.5 + 1,
-          angle: Math.random() * 360
-        })
-      );
-    };
-
-    refCurrent.on('layout', onRefCurrentLayoutHandle);
-
-    return () => {
-      refCurrent.off('layout', onRefCurrentLayoutHandle);
-    };
-  }, []);
-
-  return (
-    <pixiLayoutContainer
-      ref={ref}
-      layout={{
-        position: 'absolute',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 0,
-        borderColor: 0x000000
-      }}
-    >
-      <pixiAnimatedSprite
-        label='animatedSprite'
-        textures={textureCollection}
-        layout={{}}
-        animationSpeed={0.5}
-      />
-    </pixiLayoutContainer>
-  );
-};
-
-const LayoutContainer_ = () => {
-  useExtend({ LayoutContainer });
-
-  const ref = useRef(undefined);
 
   useGSAP(
     () => {
       const refCurrent = /** @type {LayoutContainer} */ (ref.current);
 
       gsap.to(refCurrent, {
-        // pixi: { angle: 360 },
-        duration: 1,
+        pixi: { angle: 360 },
+        duration: 2,
         repeat: -1,
         ease: 'none'
       });
@@ -122,7 +51,25 @@ const LayoutContainer_ = () => {
     <pixiLayoutContainer
       ref={ref}
       layout={{
-        position: 'relative',
+        borderWidth: 1,
+        borderColor: 0x000000
+      }}
+    >
+      <pixiAnimatedSprite
+        label='animatedSprite'
+        textures={textureCollection}
+        layout={{}}
+      />
+    </pixiLayoutContainer>
+  );
+};
+
+const LayoutContainer_ = () => {
+  useExtend({ LayoutContainer });
+
+  return (
+    <pixiLayoutContainer
+      layout={{
         width: '100%',
         height: '100%',
         justifyContent: 'center',
@@ -131,9 +78,7 @@ const LayoutContainer_ = () => {
         borderColor: 0x000000
       }}
     >
-      {Array.from({ length: 50 }).map((_, index) => (
-        <LayoutContainer__ key={index} />
-      ))}
+      <LayoutContainer__ />
     </pixiLayoutContainer>
   );
 };
