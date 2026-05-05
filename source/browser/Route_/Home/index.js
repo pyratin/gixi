@@ -1,13 +1,12 @@
 import { useRef, useEffect } from 'react';
 import * as pixiJs from 'pixi.js';
-import { Assets, Sprite, Text } from 'pixi.js';
+import { Assets, Sprite } from 'pixi.js';
 import '@pixi/layout';
 import { LayoutContainer } from '@pixi/layout/components';
 import { useExtend } from '@pixi/react';
 import gsap from 'gsap';
 import gsapPixiPlugin from 'gsap/PixiPlugin';
 import { useGSAP } from '@gsap/react';
-import 'pixi.js/advanced-blend-modes';
 
 import Application_ from './Component/Application_';
 import style from './index.module.scss';
@@ -15,56 +14,41 @@ import style from './index.module.scss';
 gsap.registerPlugin(gsapPixiPlugin, useGSAP);
 gsapPixiPlugin.registerPIXI(pixiJs);
 
-const dimensionMaximum = 700;
-
-const columnCount = 25;
-
-const assetAliasCollection = ['panda', 'rainbow-gradient'];
-
-const textureCollection = await Assets.load([
-  ...assetAliasCollection.map((alias) => ({
-    alias,
-    src: `/asset/sprite/${alias}.png`
-  })),
-  {
-    alias: 'short-stack',
-    src: '/asset/font/Short_Stack/ShortStack-Regular.ttf',
-    data: { family: 'short-stack' }
-  }
-]).then((assetObject) =>
-  assetAliasCollection.map((alias) => assetObject[alias])
+const textureCollection = await Assets.load('/asset/sprite/monsters.json').then(
+  ({ textures }) => Object.values(textures)
 );
 
-const LayoutContainer__ = ({ index, blendMode }) => {
-  useExtend({ LayoutContainer, Sprite, Text });
+const LayoutContainer__ = ({ index }) => {
+  useExtend({ LayoutContainer, Sprite });
 
   const ref = useRef(undefined);
 
   useEffect(() => {
     const refCurrent = /** @type {LayoutContainer} */ (ref.current);
 
+    const randomDefinition = Object.fromEntries(
+      ['left', 'top'].map((key) => [key, Math.random()])
+    );
+
     const onRefCurrentLayoutHandle = () => {
+      const {
+        parent: {
+          parent: {
+            layout: { _computedLayout: { width = 0, height = 0 } = {} } = {}
+          } = {}
+        } = {},
+        layout: {
+          _computedLayout: { width: _width = 0, height: _height = 0 } = {}
+        } = {}
+      } = refCurrent;
+
       Object.assign(
         refCurrent,
         /** @type {pixiJs.ContainerOptions} */ ({
-          layout: (() => {
-            const {
-              parent: {
-                parent: {
-                  layout: {
-                    _computedLayout: { width = 0, height = 0 } = {}
-                  } = {}
-                } = {}
-              } = {}
-            } = refCurrent;
-
-            const dimension = Math.min(width, height) / (columnCount / 5);
-
-            return {
-              width: dimension,
-              height: dimension
-            };
-          })()
+          layout: {
+            left: -_width / 2 + randomDefinition.left * width,
+            top: -_height / 2 + randomDefinition.top * height
+          }
         })
       );
     };
@@ -76,17 +60,28 @@ const LayoutContainer__ = ({ index, blendMode }) => {
     };
   }, []);
 
+  useEffect(() => {
+    const refCurrent = /** @type {LayoutContainer} */ (ref.current);
+
+    const refCurrentSprite = /** @type {Sprite} */ (
+      refCurrent.getChildByLabel('sprite')
+    );
+
+    Object.assign(
+      refCurrentSprite,
+      /** @type {pixiJs.SpriteOptions} */ ({
+        tint: Math.random() * 0xffffff
+      })
+    );
+  }, []);
+
   useGSAP(
     () => {
       const refCurrent = /** @type {LayoutContainer} */ (ref.current);
 
-      const refCurrentSprite = /** @type {Sprite} */ (
-        refCurrent.getChildByLabel('sprite')
-      );
-
-      gsap.to(refCurrentSprite, {
-        pixi: { angle: 360 * (index % 2 ? -1 : 1) },
-        duration: 10,
+      gsap.to(refCurrent, {
+        pixi: { angle: 360 },
+        duration: 1,
         repeat: -1,
         ease: 'none'
       });
@@ -97,48 +92,14 @@ const LayoutContainer__ = ({ index, blendMode }) => {
   return (
     <pixiLayoutContainer
       ref={ref}
-      layout={{
-        position: 'relative',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 0x000000
-      }}
+      layout={{ position: 'absolute' }}
+      eventMode='none'
     >
       <pixiSprite
         label='sprite'
-        texture={textureCollection[0]}
-        layout={{
-          height: '75%',
-          objectFit: 'contain'
-        }}
+        texture={textureCollection[index % textureCollection.length]}
+        layout={{}}
       />
-
-      <pixiSprite
-        texture={textureCollection[1]}
-        layout={{ position: 'absolute', width: '100%', height: '100%' }}
-        blendMode={blendMode}
-      />
-
-      <pixiLayoutContainer
-        layout={{
-          backgroundColor: 0xffffff,
-          padding: 4
-        }}
-      >
-        <pixiText
-          {...(() =>
-            /** @type {pixiJs.CanvasTextOptions} */ ({
-              text: blendMode,
-              layout: {},
-              style: {
-                fontFamily: 'short-stack',
-                fontSize: 16
-              }
-            }))()}
-        />
-      </pixiLayoutContainer>
     </pixiLayoutContainer>
   );
 };
@@ -146,47 +107,56 @@ const LayoutContainer__ = ({ index, blendMode }) => {
 const LayoutContainer_ = () => {
   useExtend({ LayoutContainer });
 
+  const ref = useRef(undefined);
+
+  useGSAP(
+    () => {
+      const refCurrent = /** @type {LayoutContainer} */ (ref.current);
+
+      gsap.to(refCurrent, {
+        pixi: { angle: 360 },
+        duration: 4,
+        repeat: -1,
+        ease: 'none'
+      });
+
+      gsap.fromTo(
+        refCurrent,
+        { pixi: { scale: 0 } },
+        {
+          pixi: { scale: 1 },
+          duration: 2,
+          repeat: -1,
+          ease: 'none',
+          yoyo: true
+        }
+      );
+    },
+    { dependencies: [] }
+  );
+
   return (
     <pixiLayoutContainer
+      ref={ref}
       layout={{
         width: '100%',
-        maxWidth: dimensionMaximum,
         height: '100%',
-        flexWrap: 'wrap',
+        position: 'relative',
         justifyContent: 'center',
-        alignContent: 'center',
-        borderWidth: 0,
+        alignItems: 'center',
+        borderWidth: 10,
         borderColor: 0x000000
       }}
+      eventMode='static'
+      cursor='pointer'
+      onPointerTap={(event) => {
+        const eventTarget = /** @type {LayoutContainer} */ (event.target);
+
+        eventTarget.cacheAsTexture(!eventTarget.isCachedAsTexture);
+      }}
     >
-      {[
-        'normal',
-        'add',
-        'screen',
-        'darken',
-        'lighten',
-        'color-dodge',
-        'color-burn',
-        'linear-burn',
-        'linear-dodge',
-        'linear-light',
-        'hard-light',
-        'soft-light',
-        'pin-light',
-        'difference',
-        'exclusion',
-        'overlay',
-        'saturation',
-        'color',
-        'luminosity',
-        'add-npm',
-        'subtract',
-        'divide',
-        'vivid-light',
-        'hard-mix',
-        'negation'
-      ].map((blendMode, index) => (
-        <LayoutContainer__ key={index} index={index} blendMode={blendMode} />
+      {Array.from({ length: 100 }).map((_, index) => (
+        <LayoutContainer__ key={index} index={index} />
       ))}
     </pixiLayoutContainer>
   );
@@ -195,7 +165,7 @@ const LayoutContainer_ = () => {
 const Home = () => {
   return (
     <div className={['Home', style.Home].join(' ')}>
-      <Application_ backgroundColor={0xffffff}>
+      <Application_ backgroundColor={0x1099bb}>
         <LayoutContainer_ />
       </Application_>
     </div>
