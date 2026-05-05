@@ -1,71 +1,55 @@
-import { useRef, useEffect } from 'react';
-import * as pixiJs from 'pixi.js';
-import { Assets, AnimatedSprite } from 'pixi.js';
+import { useState, useEffect } from 'react';
+import { Assets, Sprite } from 'pixi.js';
 import '@pixi/layout';
 import { LayoutContainer } from '@pixi/layout/components';
 import { useExtend } from '@pixi/react';
-import gsap from 'gsap';
-import gsapPixiPlugin from 'gsap/PixiPlugin';
-import { useGSAP } from '@gsap/react';
 
 import Application_ from './Component/Application_';
 import style from './index.module.scss';
 
-gsap.registerPlugin(gsapPixiPlugin, useGSAP);
-gsapPixiPlugin.registerPIXI(pixiJs);
+const assetAliasCollection = ['flowerTop', 'eggHead'];
 
-const textureCollection = await Assets.load('/asset/sprite/fighter.json').then(
-  ({ textures }) => Object.values(textures)
+Assets.add(
+  assetAliasCollection.map((alias) => ({
+    alias,
+    src: `/asset/sprite/${alias}.png`
+  }))
 );
 
-const LayoutContainer__ = () => {
-  useExtend({ LayoutContainer, AnimatedSprite });
+Assets.backgroundLoad(assetAliasCollection);
 
-  const ref = useRef(undefined);
+const LayoutContainer__ = ({
+  assetAliasIndexActive,
+  assetAliasIndexActiveSet
+}) => {
+  useExtend({ LayoutContainer, Sprite });
+
+  const [texture, textureSet] = useState(undefined);
 
   useEffect(() => {
-    const refCurrent = /** @type {LayoutContainer} */ (ref.current);
-
-    const refCurrentAnimatedSprite = /** @type {AnimatedSprite} */ (
-      refCurrent.getChildByLabel('animatedSprite')
-    );
-
-    refCurrentAnimatedSprite.play();
-  }, []);
-
-  useGSAP(
-    () => {
-      const refCurrent = /** @type {LayoutContainer} */ (ref.current);
-
-      gsap.to(refCurrent, {
-        pixi: { angle: 360 },
-        duration: 2,
-        repeat: -1,
-        ease: 'none'
-      });
-    },
-    { dependencies: [] }
-  );
+    Assets.load(assetAliasCollection[assetAliasIndexActive]).then(textureSet);
+  }, [assetAliasIndexActive]);
 
   return (
     <pixiLayoutContainer
-      ref={ref}
-      layout={{
-        borderWidth: 1,
-        borderColor: 0x000000
-      }}
+      layout={{ padding: 20, borderWidth: 1, borderColor: 0x000000 }}
+      eventMode='static'
+      cursor='pointer'
+      onPointerTap={() =>
+        assetAliasIndexActiveSet((assetAliasIndexActive = 0) =>
+          !assetAliasIndexActive ? 1 : 0
+        )
+      }
     >
-      <pixiAnimatedSprite
-        label='animatedSprite'
-        textures={textureCollection}
-        layout={{}}
-      />
+      <pixiSprite texture={texture} layout={{}} />
     </pixiLayoutContainer>
   );
 };
 
 const LayoutContainer_ = () => {
   useExtend({ LayoutContainer });
+
+  const [assetAliasIndexActive, assetAliasIndexActiveSet] = useState(0);
 
   return (
     <pixiLayoutContainer
@@ -78,7 +62,10 @@ const LayoutContainer_ = () => {
         borderColor: 0x000000
       }}
     >
-      <LayoutContainer__ />
+      <LayoutContainer__
+        assetAliasIndexActive={assetAliasIndexActive}
+        assetAliasIndexActiveSet={assetAliasIndexActiveSet}
+      />
     </pixiLayoutContainer>
   );
 };
